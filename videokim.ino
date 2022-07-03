@@ -44,9 +44,9 @@ uint16_t cursor_x = 0;
 uint16_t cursor_y = 0;
 uint16_t char_color_fg = BLACK;
 uint16_t char_color_bg = WHITE;
-uint16_t char_size = 3;
-uint8_t CHAR_PAD_X = 20;
-uint8_t CHAR_PAD_Y = 25;
+uint16_t char_size = 2;
+uint8_t CHAR_PAD_X = 12;
+uint8_t CHAR_PAD_Y = 16;
 unsigned long time = millis();
 int toggle = 1;
 
@@ -58,23 +58,24 @@ void clear_screen() {
 
 // render output to screen
 void display_char(char a, uint8_t echo) {
-  Serial.print(char(a));  // for debugging only
   display.Fill_Rect(cursor_x, cursor_y, CHAR_PAD_X, CHAR_PAD_Y, WHITE);
   if (a >= 0x20 && a <= 0x7E) {
-      if (cursor_x > 460) {
+      if (cursor_x > 468) {
           cursor_x = 0;
           cursor_y += CHAR_PAD_Y;
-          if (cursor_y > 320) clear_screen();
-      } display.Draw_Char(cursor_x, cursor_y, a, char_color_fg, char_color_bg, char_size, 0);
+          if (cursor_y > 316) clear_screen();
+      }
+      display.Draw_Char(cursor_x, cursor_y, a, char_color_fg, char_color_bg, char_size, 0);
   }
   
   cursor_x += CHAR_PAD_X;
+  if (cursor_x == CHAR_PAD_X && a <= 0x20) cursor_x -= CHAR_PAD_X;
   time = 0;   
 
   if (a == 0x0D && !echo) {
       cursor_x = 0;
       cursor_y += CHAR_PAD_Y;
-      if (cursor_y > 300) clear_screen();
+      if (cursor_y > 316) clear_screen();
   }
   
   if (a == 127 && cursor_x > CHAR_PAD_X) {
@@ -1302,8 +1303,8 @@ const uint8_t SUPERMON[] PROGMEM = {
     0xFF, 0xA9, 0xE0, 0x20, 0x93, 0xFF, 0x20, 0xAE, 0xFF, 0x4C, 0x7A, 0x95, 0x20, 0xF6, 0x9B, 0x4C,
     0x8D, 0x9E, 0x20, 0x9D, 0x9E, 0xA0, 0x28, 0xA9, 0x20, 0x20, 0xA0, 0x1E, 0xA9, 0x14, 0x20, 0xA0,
     0x1E, 0x88, 0xD0, 0xF3, 0x60, 0xB9, 0xAB, 0x9E, 0x08, 0x29, 0x7F, 0x20, 0xF2, 0x9B, 0xC8, 0x28,
-    0x10, 0xF3, 0x60, 0x0D, 0x20, 0x20, 0x20, 0x50, 0x43, 0x20, 0x20, 0x53, 0x52, 0x20, 0x53, 0x50,
-    0x20, 0x41, 0x52, 0x20, 0x59, 0x52, 0x20, 0x58, 0x52, 0x20, 0x20, 0x20, 0x56, 0x31, 0x2E, 0x32,
+    0x10, 0xF3, 0x60, 0x0D, 0x20, 0x3D, 0x3E, 0x20, 0x50, 0x43, 0x20, 0x20, 0x53, 0x52, 0x20, 0x53, 0x50,
+    0x20, 0x41, 0x52, 0x20, 0x59, 0x52, 0x20, 0x58, 0x52, 0x20, 0x20, 0x56, 0x31, 0x2E, 0x32,
     0x8D, 0x1D, 0xBF, 0x2E, 0x2E, 0x53, 0x59, 0x53, 0xA0, 0x3A, 0x92, 0x20, 0x45, 0x52, 0x52, 0x4F,
     0xD2, 0x41, 0xA0, 0x20, 0x20, 0xA0, 0x40, 0x02, 0x45, 0x03, 0xD0, 0x08, 0x40, 0x09, 0x30, 0x22,
     0x45, 0x33, 0xD0, 0x08, 0x40, 0x09, 0x40, 0x02, 0x45, 0x33, 0xD0, 0x08, 0x40, 0x09, 0x40, 0x02,
@@ -1616,7 +1617,7 @@ const uint8_t IRQ[] PROGMEM = {
 };
 
 // ======== RAM  0x0000-0x1700 ================================================
-uint8_t RAM[1024];
+uint8_t RAM[0x1700]; // 5888 bytes
 
 // ======== RIOT chips memory 0x1700-0x17FF====================================
 uint8_t RIOT[256];
@@ -2541,7 +2542,7 @@ uint8_t read6502(uint16_t address) {
     }
 
     // KIM-1 RAM
-    if (address < 0x0400) return RAM[address];
+    if (address < 0x1700) return RAM[address];
 
     // skip non-existing memory
     return 0;
@@ -2592,11 +2593,15 @@ void setup()
     display.Fill_Screen(WHITE);
     display.Set_Rotation(1); 
     display.Set_Text_Mode(0);
-    //display.Set_Text_colour(BLACK);
-    //display.Set_Text_Back_colour(WHITE);
-    //display.Set_Text_Size(2);
-    //display.Print_String("Video KIM", 50, 10);
-  
+
+    // Intro
+    display.Set_Text_colour(BLACK);
+    display.Set_Text_Back_colour(WHITE);
+    display.Set_Text_Size(8);
+    display.Print_String("Video KIM", 25, 125);
+    delay(1500);
+    display.Fill_Rect(0, 0, 480, 320, WHITE);
+    
     // start serial communication
     Serial.begin(9600);
     
