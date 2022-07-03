@@ -60,11 +60,8 @@ Arduino based KIM-1 emulator running in TTY mode, outputting serial port content
     using the format shown in Appendix F.  To read such a tape into the KIM-1
     system, proceed as follows:
 
-       1. Load the punched paper tape on to the tape mechanism
-
-       2. Type [L]
-
-       3. Activate the paper tape reader
+       1. Type [L]
+       2. Run command: 'sudo python3 ./path/to/file.ptp'
 
     The paper tape will advance and data will be loaded into addresses
     as specified on the tape.  A printed copy of the data read will be generated
@@ -133,7 +130,7 @@ Arduino based KIM-1 emulator running in TTY mode, outputting serial port content
           module are depressed.  The single step feature may
           be employed while in the TTY mode.
 
-# MOVIT utility from the 1st book of KIM is used for this purpose
+# MOVIT utility from the 1st book of KIM
  - Enter original start adress of the program to move in $00D0 (LSB) and $00D1 (MSB),
  - Enter original end adress of the program to move in $00D2 (LSB) and $00D3 (MSB),
  - Enter new start adress of the program to move in $00D4 (LSB) and $00D5 (MSB),
