@@ -1,15 +1,16 @@
 # VIDEOKIM
-Arduino based KIM-1 emulator
+Arduino based KIM-1 emulator running in TTY mode, outputting serial port content to TFT display.
 
 # Memory layout
     0x0000 - 0x16FF    5888 bytes RAM Arduino Mega (Uno & Nano: 1024 bytes)
     0x1700 - 0x17FF     256 bytes RAM 6530 RIOT chips (I/O, Timers)
     0x1800 - 0x1FFF    2048 bytes ROM 6530 RIOT chips (KIM operating system)
     0x2000 - 0x28FF    2304 bytes ROM Tiny Basic by Tom Pittman
-    0x2900 - 0x38FF    4096 bytes EEPROM Arduino Mega (Uno & Nano: 1024 bytes)
+    0x2900 - 0x3FFF    4096 bytes EEPROM Arduino Mega (Uno & Nano: 1024 bytes)
     0x4000 - 0x405F      95 bytes ROM Movit utility
     0x4060 - 0x408A      43 bytes ROM Save utility
-    0x408B - 0x40B5      43 bytes ROM Load utility
+    0x408B - 0x40B5      43 bytes ROM Load utility2000
+    0x9548 - 0xA032    2794 bytes ROM Supermon by Jim Butterfield
     0xFFFA - 0xFFFF       6 bytes ROM IRQ table
 
 # MOVIT utility from the 1st book of KIM is used for this purpose
@@ -35,8 +36,8 @@ This will init addresses $D0-$D5 and call MOVIT
 # LOAD/SAVE BASIC user program
     >A=USR(S)        // this will call SAVE at $4060
     >A=USR(L)        // this will call LOAD at $408B
-    >A=(USR(16480))  // SAVE if you've overwritten variable S
-    >A=(USR(16523))  // LOAD if you've overwritten variable L
+    >A=USR(16480)    // SAVE if you've overwritten variable S
+    >A=USR(16523)    // LOAD if you've overwritten variable L
 
 
 

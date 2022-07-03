@@ -40,8 +40,10 @@ LCDWIKI_KBV display(ILI9486, 40, 38, 39, -1, 41); //model,cs,cd,wr,rd,reset
 #define YELLOW  0xFFE0
 #define BLACK   0xFFFF
 
-uint16_t cursor_x = 0;
-uint16_t cursor_y = 0;
+uint16_t CURSOR_START_X = 0;
+uint16_t CURSOR_START_Y = 1;
+uint16_t cursor_x = CURSOR_START_X;
+uint16_t cursor_y = CURSOR_START_Y;
 uint16_t char_color_fg = BLACK;
 uint16_t char_color_bg = WHITE;
 uint16_t char_size = 2;
@@ -53,15 +55,20 @@ int toggle = 1;
 // clear screen
 void clear_screen() {
     display.Fill_Rect(0, 0, 480, 320, WHITE);
-    cursor_y = 0;
+    cursor_y = CURSOR_START_Y;
 }
 
 // render output to screen
 void display_char(char a, uint8_t echo) {
+  if (a == 27) {
+    nmi6502();
+    return;
+  }
+
   display.Fill_Rect(cursor_x, cursor_y, CHAR_PAD_X, CHAR_PAD_Y, WHITE);
   if (a >= 0x20 && a <= 0x7E) {
       if (cursor_x > 468) {
-          cursor_x = 0;
+          cursor_x = CURSOR_START_X;
           cursor_y += CHAR_PAD_Y;
           if (cursor_y > 316) clear_screen();
       }
@@ -73,7 +80,7 @@ void display_char(char a, uint8_t echo) {
   time = 0;   
 
   if (a == 0x0D && !echo) {
-      cursor_x = 0;
+      cursor_x = CURSOR_START_X;
       cursor_y += CHAR_PAD_Y;
       if (cursor_y > 316) clear_screen();
   }
@@ -1552,26 +1559,26 @@ const uint8_t MOVIT[] PROGMEM = {
 };
 
 /*
-   Save data from RAM (0x0200-0x03FF) to EEPROM (0x2900-0x29AFF)
+   Save data from RAM (0x0000-0x16FF) to EEPROM (0x2900-0x29AFF)
 
    ORIGIN at $4060
    START at $4060
 */
 
-const uint8_t SAVE_512B[] PROGMEM = {
-  0xA5, 0x24,          // LDA $24 (BASIC program size MSB)
-  0x8D, 0x00, 0x29,    // STA $2900
-  0xA5, 0x25,          // LDA $25 (BASIC program size LSB)
-  0x8D, 0x01, 0x29,    // STA $2901
+const uint8_t SAVE_RAM[] PROGMEM = {
+  0xEA, 0xEA,
+  0xEA, 0xEA, 0xEA,
+  0xEA, 0xEA,
+  0xEA, 0xEA, 0xEA,
   0xA9, 0x00,          // LDA #$00
   0x8D, 0xD0, 0x00,    // STA $00D0
-  0xA9, 0x02,          // LDA #$02
-  0x8D, 0xD1, 0x00,    // STA $00D1 (Start address $0200)
+  0xA9, 0x03,          // LDA #$03
+  0x8D, 0xD1, 0x00,    // STA $00D1
   0xA9, 0xFF,          // LDA #$FF
   0x8D, 0xD2, 0x00,    // STA $00D2
-  0xA9, 0x03,          // LDA #$03
+  0xA9, 0x12,          // LDA #$12
   0x8D, 0xD3, 0x00,    // STA $00D3
-  0xA9, 0x02,          // LDA $02
+  0xA9, 0x00,          // LDA $00
   0x8D, 0xD4, 0x00,    // STA $00D4
   0xA9, 0x29,          // LDA 0x29
   0x8D, 0xD5, 0x00,    // STA $00D5
@@ -1585,23 +1592,23 @@ const uint8_t SAVE_512B[] PROGMEM = {
    START at $408B
 */
 
-const uint8_t LOAD_512B[] PROGMEM = {
+const uint8_t LOAD_RAM[] PROGMEM = {
   // copy program to RAM
-  0xAD, 0x00, 0x29,    // LDA $2900 (BASIC program size MSB)
-  0x85, 0x24,          // STA $24
-  0xAD, 0x01, 0x29,    // LDA $2901 (BASIC program size LSB)
-  0x85, 0x25,          // STA $25
-  0xA9, 0x02,          // LDA #$02
+  0xEA, 0xEA, 0xEA,    // LDA $2900
+  0xEA, 0xEA,          // STA $24   BASIC code len
+  0xEA, 0xEA, 0xEA,    // LDA $2901
+  0xEA, 0xEA,          // STA $25   BASIC code len
+  0xA9, 0x00,          // LDA #$00
   0x8D, 0xD0, 0x00,    // STA $00D0
   0xA9, 0x29,          // LDA #$29
-  0x8D, 0xD1, 0x00,    // STA $00D1 (Start address $0200)
-  0xA9, 0x01,          // LDA #$01
+  0x8D, 0xD1, 0x00,    // STA $00D1
+  0xA9, 0xFF,          // LDA #$FF
   0x8D, 0xD2, 0x00,    // STA $00D2
-  0xA9, 0x2B,          // LDA #$2B
+  0xA9, 0x38,          // LDA #$38
   0x8D, 0xD3, 0x00,    // STA $00D3
   0xA9, 0x00,          // LDA $00
   0x8D, 0xD4, 0x00,    // STA $00D4
-  0xA9, 0x02,          // LDA 0x02
+  0xA9, 0x03,          // LDA 0x02
   0x8D, 0xD5, 0x00,    // STA $00D5
   0x20, 0x00, 0x40     // JSR MOVIT
 };
@@ -2456,16 +2463,16 @@ uint8_t read6502(uint16_t address) {
     if (address >= 0x9548 && address <= 0xA032) return pgm_read_byte_near(SUPERMON + (address - 0x9548));
     
     // LOAD 512 bytes
-    if (address >= 0x408B && address <= 0x40B5) return pgm_read_byte_near(LOAD_512B + (address - 0x408B));
+    if (address >= 0x408B && address <= 0x40B5) return pgm_read_byte_near(LOAD_RAM + (address - 0x408B));
     
     // SAVE 512 bytes
-    if (address >= 0x4060 && address <= 0x408A) return pgm_read_byte_near(SAVE_512B + (address - 0x4060));
+    if (address >= 0x4060 && address <= 0x408A) return pgm_read_byte_near(SAVE_RAM + (address - 0x4060));
     
     // MOVIT
     if (address >= 0x4000 && address <= 0x405F) return pgm_read_byte_near(MOVIT + (address - 0x4000));
     
     // EEPROM (1024 for Uno/Nano, 4096 for Mega)
-    if (address >= 0x2900 && address <= 0x38FF) return (EEPROM.read(address - 0x2900));
+    if (address >= 0x2900 && address <= 0x3FFF) return (EEPROM.read(address - 0x2900));
 
     // TINY BASIC ROM    
     if (address >= 0x2000 && address <= 0x28FF) return pgm_read_byte_near(TINY_BASIC + (address - 0x2000));
@@ -2475,7 +2482,7 @@ uint8_t read6502(uint16_t address) {
         // intercept OUTCH (send char to serial)
         if (address == 0x1EA0) {
             display_char(a, 0);          // display char on LCD
-            pc = 0x1ED3;	             // skip subroutine
+            pc = 0x1ED3;               // skip subroutine
             return (0xEA);               // and return from subroutine with a fake NOP instruction
         }
 
@@ -2486,13 +2493,13 @@ uint8_t read6502(uint16_t address) {
             if (a == 0xFF) a = 0x00;     // Arduino reads 0xFF on no key, replace it with 0
                       
             if (a == 0) {
-	            pc = 0x1E60;	         // cycle through GET1 loop for character start,
-	            return (0xEA);           //  let the 6502 runs through this loop in a fake way
+              pc = 0x1E60;           // cycle through GET1 loop for character start,
+              return (0xEA);           //  let the 6502 runs through this loop in a fake way
             }
 
             
             display_char(a, 1);          // display char on LCD
-            x = RAM[0x00FD];	         // x saved in TMPX by getch, need to get it in x;
+            x = RAM[0x00FD];           // x saved in TMPX by getch, need to get it in x;
             pc = 0x1E87;                 // skip subroutine
             return (0xEA);               // and return from subroutine with a fake NOP instruction
         }
@@ -2500,7 +2507,7 @@ uint8_t read6502(uint16_t address) {
         // intercept DETCPS
         if (address == 0x1C2A) {
             RIOT[0x17F3-0x1700] = 1;     // just store some random bps delay on TTY in CNTH30
-            RIOT[0x17F2-0x1700] = 1;	 // just store some random bps delay on TTY in CNTL30
+            RIOT[0x17F2-0x1700] = 1;   // just store some random bps delay on TTY in CNTL30
             pc = 0x1C4F;                 // skip subroutine
             return (0xEA);               // and return from subroutine with a fake NOP instruction
         }
@@ -2550,7 +2557,7 @@ uint8_t read6502(uint16_t address) {
 
 void write6502(uint16_t address, uint8_t value) {    
     // EEPROM (512 bytes for NANO, 1024 forUNO, 4096 for MEGA)
-    if (address >= 0x2900 && address <= 0x38FF) {
+    if (address >= 0x2900 && address <= 0x3FFF) {
         EEPROM.update((address - 0x2900), value);
         return;
     }
@@ -2569,7 +2576,7 @@ void write6502(uint16_t address, uint8_t value) {
     }
     
     // KIM-1 RAM
-    if (address < 0x0400) {  
+    if (address < 0x1700) {  
         RAM[address] = value;
         return;
     }
@@ -2593,12 +2600,13 @@ void setup()
     display.Fill_Screen(WHITE);
     display.Set_Rotation(1); 
     display.Set_Text_Mode(0);
+    display.Vert_Scroll(0, 480, 5);
 
     // Intro
     display.Set_Text_colour(BLACK);
     display.Set_Text_Back_colour(WHITE);
     display.Set_Text_Size(8);
-    display.Print_String("Video KIM", 25, 125);
+    display.Print_String("Video KIM", 20, 125);
     delay(1500);
     display.Fill_Rect(0, 0, 480, 320, WHITE);
     
