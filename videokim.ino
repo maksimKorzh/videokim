@@ -2489,7 +2489,7 @@ uint8_t read6502(uint16_t address) {
         // intercept GETCH (get char from serial).
         if (address == 0x1E65) {
             a = Serial.read();           // get A from serial
-            if (a >= 'a' && a <= 'z') a ^= 0x20;   // to upper case
+            //if (a >= 'a' && a <= 'z') a ^= 0x20;   // to upper case
             
             if (a == 0xFF) a = 0x00;     // Arduino reads 0xFF on no key, replace it with 0
                       
