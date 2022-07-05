@@ -1,5 +1,6 @@
 # VIDEOKIM
 Arduino based KIM-1 emulator running in TTY mode, outputting serial port content to TFT display.
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/6GqOHyGS9Vk/0.jpg)](https://www.youtube.com/watch?v=6GqOHyGS9Vk)
 
 # Memory layout
     0x0000 - 0x16FF    5888 bytes RAM Arduino Mega (Uno & Nano: 1024 bytes)
